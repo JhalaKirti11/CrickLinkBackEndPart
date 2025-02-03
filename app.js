@@ -51,6 +51,11 @@ import TournamentRouter from "./routes/tournament.route.js";
 import PlayerRouter from "./routes/player.route.js";
 import MatchRouter from "./routes/match.route.js";
 import authRoutes from "./routes/authRoutes.js";
+
+
+import groupChatRouter from "./routes/groupChatRouter.js";
+
+
 import path from "path"
 import {fileURLToPath} from "url"
 
@@ -79,6 +84,7 @@ mongoose.connect("mongodb://localhost:27017/cricklink")
   app.use("/match", MatchRouter);
   app.use("/player", PlayerRouter);
   app.use("/auth", authRoutes);
+  app.use("/group", groupChatRouter);
 
   app.listen(3001, () => {
     console.log("Server Started....");
