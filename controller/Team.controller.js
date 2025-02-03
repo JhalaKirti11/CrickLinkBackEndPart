@@ -208,7 +208,7 @@ export const reqacceptBYCaptin = async (req, res, next) => {
       // Find player and team
       const player = await User.findById(playerId);
       const team = await Team.findById(teamId);
-      console.log("idss n: "+playerId +" "+player +" "+ team)
+      console.log("id n: "+playerId +" "+player +" "+ team)
       const captainId = team.captainId;
 
       if (!player) {
