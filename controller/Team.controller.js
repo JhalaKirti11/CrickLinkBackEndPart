@@ -15,7 +15,7 @@ export const createTeam = async (request, response, next) => {
         console.log(request.body)
         // Find the captain by username
         const captain = await User.findOne({ name: username });
-        console.log(captain);
+        console.log("captain : " + captain);
         if (!captain) {
             return response.status(404).json({ error: "Captain not found" });
         }
@@ -286,3 +286,26 @@ export const reqacceptBYCaptin = async (req, res, next) => {
       return res.status(500).json({ message: "Server error", error });
   }
 };
+
+//=========================Get Team By user ID========================================
+
+export const getTeamByUser = async (request, response, next) => {
+    try {
+        let {id} = request.body;
+        console.log("userId : "+ id);
+        const result = await Team.find({ $or: [{ captainId: id }, { players: id }] })
+            .populate("captainId", "name")
+            .populate("players");
+  
+        console.log("Result by user :"+result);
+  
+        if (result) {
+            return response.status(200).json({ message: result });
+        }
+  
+        return response.status(404).json({ error: "Team not found" });
+    } catch (err) {
+        console.error(err);
+        return response.status(500).json({ error: "internal server error" });
+      }
+  };

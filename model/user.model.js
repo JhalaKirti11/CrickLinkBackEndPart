@@ -13,11 +13,12 @@ const notificationSchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true }, 
-    password: { type: String, required: true }, 
-    contact:{ type: String, required: true },           
+    password: { type: String}, 
+    contact:{ type: String },
+    googleId: { type: String},
     role: { type: String, enum: ["player", "captain", "organizer"], default: "player"}, 
     profile: {
-      skills: { type: String }, 
+      skills: { type: String },
       experience: { type: Number}, 
       location: { type: String }, 
     },

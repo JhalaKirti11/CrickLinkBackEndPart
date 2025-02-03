@@ -11,10 +11,10 @@ export const createMatches = async (request, response, next) => {
     let team1 = await Team.findOne({ teamName: team1_name });
     let team2 = await Team.findOne({ teamName: team2_name });
     console.log("teams : " + team1 + " " + team2);
-    if(team1 && team2){
-    request.body.team1 = team1._id;
-    request.body.team2 = team2._id;
-    }else{
+    if (team1 && team2) {
+        request.body.team1 = team1._id;
+        request.body.team2 = team2._id;
+    } else {
         return response.status(200).json({ message: "No team register with this name" });
     }
     console.log("team ids : " + request.body.team1 + " " + request.body.team2)
@@ -81,10 +81,10 @@ export const updateResult = async (request, response, next) => {
     try {
         let id = request.params.matchId;
         let { team_name, score } = request.body;
-        let team = await Team.findOne({teamName: team_name});
-        console.log("team : "+ team);
-        if(!team){
-            return response.status(401).json({message:"No team Register With This Name!"});
+        let team = await Team.findOne({ teamName: team_name });
+        console.log("team : " + team);
+        if (!team) {
+            return response.status(401).json({ message: "No team Register With This Name!" });
         }
         const winnerId = team._id;
         let result = await Match.updateOne({ _id: id }, { $set: { "result.winnerId": winnerId, "result.score": score } });
@@ -103,15 +103,37 @@ export const updateResult = async (request, response, next) => {
 //------------------------------- Find Match By MatchId--------------------------
 
 export const MatchByUniqueMatchId = async (req, response, next) => {
-    let {matchId} = req.body;
+    let { matchId } = req.body;
     try {
         console.log("find match: " + matchId);
         const data = await Match.findOne({ matchId: matchId })
-        console.log("match data : " + data._id +"      "+data)
+        console.log("match data : " + data._id + "      " + data)
         if (data) {
             return response.status(201).json({ message: "Match Found By matchId : ", data });
         }
         return response.status(501).json({ message: " No Match Scheduled Yet found" });
+    } catch (err) {
+        return response.status(501).json({ message: " Internal Server Error ", err });
+    }
+}
+
+//====================================Match By team id==================================
+
+export const MatchByTeamId = async (req, response, next) => {
+    let { teamId } = req.body;
+    try {
+        console.log("find match: " + teamId);
+        const data = await Match.find({ $or: [{ team1: teamId }, { team2: teamId }] })
+            .populate("tournamentId", "TournamentName")
+            .populate("team1", "teamName")
+            .populate("team2", "teamName");
+
+        if (data.length > 0) {
+            console.log("Match data found:", data);
+            return response.status(200).json({ message: `Matches found for teamId: ${teamId}`, data });
+        } else {
+            return response.status(404).json({ message: "No match scheduled yet for this team." });
+        }
     } catch (err) {
         return response.status(501).json({ message: " Internal Server Error ", err });
     }

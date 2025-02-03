@@ -10,8 +10,6 @@ router.get("/tournamentById/:id", tournamentById);
 router.delete("/deleteTournament/:id", deleteTournament);
 router.patch("/updateTournament/:id", updateTornamentSchedule);
 // router.patch("/tournamentStatus", tournamentStatus);
-router.patch("/addTeam/:id",
-    body("name","team name is required").notEmpty(),
-    addTeam);
+router.patch("/addTeam/:id", addTeam);
 
 export default router;
