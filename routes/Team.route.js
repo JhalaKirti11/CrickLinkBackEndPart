@@ -1,5 +1,5 @@
 import express from "express";
-import { createTeam, viewTeam, getTeam } from "../controller/Team.controller.js";
+import { createTeam, viewTeam, getTeam, getTeamByUser } from "../controller/Team.controller.js";
 //import { reqAcceptance, reqCaptainToPlayer } from "../controller/notification.controller.js";
  import {addtoTeamReq , reqacceptBYCaptin, getNotification } from "../controller/Team.controller.js"
 
@@ -12,7 +12,8 @@ router.post("/createTeam",
     body("captainId", "captainId is required").notEmpty(),
     createTeam);
 
-router.get("/viewteam", viewTeam);
+    router.get("/viewteam", viewTeam);
+    router.post("/getTeamByUser", getTeamByUser);
 router.get("/:teamId", getTeam);
 
 router.get("/notification/:userId",getNotification )
