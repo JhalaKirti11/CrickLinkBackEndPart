@@ -1,22 +1,23 @@
-import {Group} from "../model/groupChat.model.js";
+import { Group } from "../model/groupChat.model.js";
 import { User } from "../model/user.model.js";
 
 
 export const createGroup = async (req, res, next) => {
     try {
         const { userId } = req.params;
-        console.log("User Id : "+ userId)
-        const { groupName, players, description } = req.body;
+        console.log("User Id : " + userId)
+        const { groupName, members, description } = req.body;
+        req.body.members = userId;
 
-        req.body.captainId = userId;
-        console.log("Captan ID : "+ req.body.captainId);
         const checkGroup = await Group.findOne({ groupName });
+
         if (!checkGroup) {
             const group = await Group.create(req.body);
             console.log("Group data : " + group);
+
             return res.status(201).json({ message: "Group created successfully" });
         } else {
-            return res.status(401).json({ error: "Group can not be created!" })
+            return res.status(401).json({ error: `${groupName} is not available/already exist` })
         }
     } catch (error) {
         console.log("error : " + error);
@@ -29,9 +30,8 @@ export const viewGroup = async (req, res, next) => {
     try {
         const { groupId } = req.params;
         console.log("view group by groupId : " + groupId)
-        const group = await Group.findById({_id:groupId})
-            .populate("captainId", "name")
-            .populate("players");
+        const group = await Group.findById({ _id: groupId })
+            .populate("members")
 
         if (group) {
             return res.status(201).json({ message: group });
@@ -44,19 +44,20 @@ export const viewGroup = async (req, res, next) => {
     }
 }
 
+//==========================================================================================
 
-export const joinGroup = async (req, res, next) => {
+export const addToGroup = async (req, res, next) => {
     try {
         const { groupId } = req.params;
         const { playerId } = req.body;
-        console.log("gids : " + groupId + " pid : " + playerId);
+        // console.log("gids : " + groupId + " pid : " + playerId);
         const group = await Group.findById({ _id: groupId });
         if (group) {
-            group.players.push(playerId);
+            group.members.push(playerId);
             await group.save();
             res.status(201).json({ message: `Player Added to the group ${group.groupName}` });
         } else {
-            res.status(401).json({ message: 'Player not added to the team-chat' });
+            res.status(401).json({ message: 'Player not added to the team!' });
         }
     } catch (error) {
         console.error(error.message);
@@ -66,22 +67,21 @@ export const joinGroup = async (req, res, next) => {
 
 //===================================================================
 
-export const getGroupByUserId = async (req, res, next)=>{
-    try{
-        const {userId} = req.params;
-        const groups = await Group.find({ $or: [{ captainId: userId }, { players: userId }] })
-        .populate('captainId', 'name profile_picture')  // Populate the creator's details
-        .populate('players', 'name profile_picture')
-        .populate('messages');
-  
-      // If no groups are found
-      if (!groups || groups.length === 0) {
-        return res.status(404).json({ message: 'No groups found for this user.' });
-      }
-  
-      // Return the groups
-      return res.status(200).json({ groups });
-      
+export const getGroupByUserId = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const groups = await Group.findOne({ members: userId })
+            .populate('members', 'name profile_picture')
+            .populate('messages');
+
+        // If no groups are found
+        if (!groups || groups.length === 0) {
+            return res.status(404).json({ message: 'No groups found with this userId.' });
+        }
+
+        // Return the groups
+        return res.status(200).json({ groups });
+
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ message: 'Internal Server Error' });
@@ -94,72 +94,68 @@ export const getGroupByUserId = async (req, res, next)=>{
 export const updateGroup = async (req, res) => {
     const { groupId } = req.params;
     const { groupName, description } = req.body;
-  
+
     try {
-      const group = await Group.findById({_id: groupId});
-  
-      // Authorization check: Make sure the user is the creator or admin
-      if (group.captainId.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ message: "Unauthorized: You are not the creator of this group" });
-      }
-  
-      const updatedGroup = await Group.findByIdAndUpdate({_id:groupId}, { groupName, description }, { new: true });
-      if (!updatedGroup) {
-        return res.status(404).json({ message: 'Group not found' });
-      }
-      res.json(updatedGroup);
+        const group = await Group.findById({ _id: groupId });
+
+        const updatedGroup = await Group.findByIdAndUpdate({ _id: groupId }, { groupName, description }, { new: true });
+        if (!updatedGroup) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+        return res.status(201).json({message: updatedGroup});
     } catch (err) {
-      console.log(err.message);
-      res.status(500).json({ message: 'Internal Server Error' });
+        console.log(err.message);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
-  };
+};
 
 //===================================== Message Send =============================================================
 
-export const sendMessages = async (req, res, next)=>{
-    try{
-        const { userId }= req.params;
-        const { groupId, message} = req.body;
+export const sendMessages = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const { groupId, message } = req.body;
 
-        const group = await Group.findOne({_id: groupId});
-        console.log("Group data : "+ group);
+        const group = await Group.findOne({ _id: groupId });
+        console.log("Group data : " + group);
 
         let currentDate = Date.now();
         currentDate = new Date(currentDate);
         console.log("currentDate : " + currentDate);
-       
-        const createdMessage = group.messages.push({
+
+    //  const createdMessage = group.messages.push({
+        const createdMessage = await GroupMessage.create({
             senderId: userId,
-            groupId: groupId,
-            message:message,
+            groupId: groupId,   // receiver
+            message: message,
             sendDate: currentDate
         });
 
         // captain.messages.push(createMessage);
-        await group.save();
-        res.status(201).json({ message: 'Message sent', data: createdMessage });
+        // await group.save();
+        return res.status(201).json({ message: 'Message sent', data: createdMessage });
 
-    }catch (err) {
-      console.log(err.message);
-      res.status(500).json({ message: 'Internal Server Error' });
+    } catch (error) {
+        console.log(err.message);
+        return res.status(500).json({ error: 'Internal Server Error', error });
     }
 }
 
 //================================== View All Message ======================================
 
-export const ViewAllMessages = async (req, res, next)=>{
-    try{
-        const {groupId} = req.params;
-       
-            const group = await Group.findById({_id:groupId}).populate([
-              { path: "messages.groupId", select: "groupName" },
-              { path: "messages.senderId", select: "name" },
-          ]);
-          console.log("Group Messages : "+group.messages);
-          res.status(200).json({ data : group.messages });
+export const ViewAllMessages = async (req, res, next) => {
+    try {
+        const { groupId } = req.params;
 
-    }catch (err) {
-      console.log(err.message);
-      res.status(500).json({ message: 'Internal Server Error' });
+        const group = await Group.findById({ _id: groupId }).populate([
+            { path: "messages.groupId", select: "groupName" },
+            { path: "messages.senderId", select: "name" },
+        ]);
+        console.log("Group Messages : " + group.messages);
+        res.status(200).json({ data: group.messages });
+
+    } catch (err) {
+        console.log(err.message);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 }
