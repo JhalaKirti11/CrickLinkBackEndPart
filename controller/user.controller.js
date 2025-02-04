@@ -40,6 +40,7 @@ export const signIn = async (request, response, next) => {
     console.log(request.body);
     let user = await User.findOne({ email });
     if (user) {
+      console.log("Passwords : "+ password +" "+ user.password)
       let status = bcrypt.compareSync(password, user.password);
       return status ? response.status(200).json({ message: "Sign in success..", user, token: generateToken(user._id) }) : response.status(401).json({ error: "Bad request | invalid password" })
     }
@@ -139,6 +140,7 @@ export const updateProfile = async (req, res) => {
         "profile.skills": skills,
         "profile.experience": experience,
         "profile.location": location,
+        "profile.height":height,
         "profile_photo": profilePhotoUrl,
       },
       { new: true }
@@ -237,6 +239,7 @@ export const userDetails = async (req, res, next) => {
         skills: user.profile.skills,
         experience: user.profile.experience,
         location: user.profile.location,
+        height: user.profile.height
       },
     });
   } catch (err) {

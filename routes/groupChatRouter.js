@@ -1,11 +1,11 @@
 import express from "express";
-import { createGroup, viewGroup, joinGroup, getGroupByUserId , updateGroup, sendMessages, ViewAllMessages} from "../controller/groupChat.controller.js";
+import { createGroup, viewGroup, addToGroup, getGroupByUserId , updateGroup, sendMessages, ViewAllMessages} from "../controller/groupChat.controller.js";
 
 const router = express.Router();
 
 router.post("/createGroup/:userId", createGroup);
 router.get("/viewGroup/:groupId", viewGroup);
-router.get("/joinGroup/:groupId", joinGroup);
+router.get("/joinGroup/:groupId", addToGroup);
 router.get("/getGroupByUserId/:userId", getGroupByUserId);
 router.post("/updateGroup/:groupId", updateGroup);
 

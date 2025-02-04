@@ -6,16 +6,16 @@ const groupMessage = new mongoose.Schema(
         senderId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'user',
-            // required: true,
+            required: true,
         },
         groupId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Group',
-            // required: true,
+            required: true,
         },
         message: {
             type: String,
-            // required: true,
+            required: true,
         },
         sendDate: {
             type: Date,
@@ -31,16 +31,14 @@ const group = new mongoose.Schema({
         required: true,
         unique: true
     },
-    captainId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'user',
-        required: true
-    },
-    players: [{
+    members: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user'
     }],
-    messages: [groupMessage],
+    messages: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'GroupMessage'
+    }],
     description: {
         type: String
     },
@@ -48,3 +46,4 @@ const group = new mongoose.Schema({
 );
 
 export const Group = mongoose.model('Group', group);
+export default mongoose.model('GroupMessage', groupMessage);
