@@ -1,4 +1,4 @@
-import { Group } from "../model/groupChat.model.js";
+import GroupMessage,  { Group } from "../model/groupChat.model.js";
 import { User } from "../model/user.model.js";
 
 
@@ -15,7 +15,7 @@ export const createGroup = async (req, res, next) => {
             const group = await Group.create(req.body);
             console.log("Group data : " + group);
 
-            return res.status(201).json({ message: "Group created successfully" });
+            return res.status(201).json({ message: "Group created successfully", group : group });
         } else {
             return res.status(401).json({ error: `${groupName} is not available/already exist` })
         }
@@ -31,7 +31,7 @@ export const viewGroup = async (req, res, next) => {
         const { groupId } = req.params;
         console.log("view group by groupId : " + groupId)
         const group = await Group.findById({ _id: groupId })
-            .populate("members")
+            .populate("members", "name")
 
         if (group) {
             return res.status(201).json({ message: group });
@@ -50,6 +50,9 @@ export const addToGroup = async (req, res, next) => {
     try {
         const { groupId } = req.params;
         const { playerId } = req.body;
+        if(!playerId){
+            return res.status(201).json({message:"Invalid User"})
+        }
         // console.log("gids : " + groupId + " pid : " + playerId);
         const group = await Group.findById({ _id: groupId });
         if (group) {
@@ -119,6 +122,10 @@ export const sendMessages = async (req, res, next) => {
         const group = await Group.findOne({ _id: groupId });
         console.log("Group data : " + group);
 
+        if(group.members.includes(userId)){
+            return res.status(403).json({ message: "You are not a member of this group" });
+        }
+
         let currentDate = Date.now();
         currentDate = new Date(currentDate);
         console.log("currentDate : " + currentDate);
@@ -147,15 +154,14 @@ export const ViewAllMessages = async (req, res, next) => {
     try {
         const { groupId } = req.params;
 
-        const group = await Group.findById({ _id: groupId }).populate([
-            { path: "messages.groupId", select: "groupName" },
-            { path: "messages.senderId", select: "name" },
-        ]);
-        console.log("Group Messages : " + group.messages);
-        res.status(200).json({ data: group.messages });
+        const group = await GroupMessage.find({ groupId: groupId })
+        .populate("senderId", "name").sort({sendDate:1});
 
-    } catch (err) {
-        console.log(err.message);
-        res.status(500).json({ message: 'Internal Server Error' });
+        console.log("Group Messages : " + group);
+        return res.status(200).json({ data: group });
+
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 }

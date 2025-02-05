@@ -5,9 +5,9 @@ const router = express.Router();
 
 router.post("/createGroup/:userId", createGroup);
 router.get("/viewGroup/:groupId", viewGroup);
-router.get("/joinGroup/:groupId", addToGroup);
+router.post("/joinGroup/:groupId", addToGroup);
 router.get("/getGroupByUserId/:userId", getGroupByUserId);
-router.post("/updateGroup/:groupId", updateGroup);
+router.patch("/updateGroup/:groupId", updateGroup);
 
 //=============== Message Service==========================
 
