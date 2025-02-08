@@ -67,7 +67,7 @@ export const viewTeam = async (request, response, next) => {
 //         const result = await Team.find({ $or: [{ captainId: teamId }, { _id: teamId }] })
 //             .populate("captainId", "name")
 //             .populate("players");
-        
+
 //         if (result.length>0) {
 //             console.log("Result : "+result);
 //             return response.status(200).json({ team: result });
@@ -80,23 +80,23 @@ export const viewTeam = async (request, response, next) => {
 //     }
 // };
 export const getTeam = async (request, response, next) => {
-  try {
-      let teamId = request.params.teamId;
-      const result = await Team.findOne({ _id: teamId })
-          .populate("captainId", "name")
-          .populate("players");
+    try {
+        let teamId = request.params.teamId;
+        const result = await Team.findOne({ _id: teamId })
+            .populate("captainId", "name")
+            .populate("players");
 
-      console.log(result);
+        console.log(result);
 
-      if (result) {
-          return response.status(200).json({ Team: result });
-      }
+        if (result) {
+            return response.status(200).json({ Team: result });
+        }
 
-      return response.status(404).json({ error: "Team not found" });
-  } catch (err) {
-      console.error(err);
-      return response.status(500).json({ error: "internal server error" });
-    }
+        return response.status(404).json({ error: "Team not found" });
+    } catch (err) {
+        console.error(err);
+        return response.status(500).json({ error: "internal server error" });
+    }
 };
 
 
@@ -122,190 +122,226 @@ export const withoutTeam = async (request, response, next) => {
     }
 }
 //================================================================
+export const addtoTeamReq = async (req, res) => {
+    try {
+        const { playerId, teamId, senderId, receiverId } = req.body;
 
-export const addtoTeamReq = async (req, res, next) => {
-  try {
-    const { playerId, teamId } = req.body;
+        // Validate Object IDs
+        if (!mongoose.Types.ObjectId.isValid(playerId) || !mongoose.Types.ObjectId.isValid(teamId) || !mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(receiverId)) {
+            return res.status(400).json({ message: "Invalid ObjectId format" });
+        }
 
-    if (!mongoose.Types.ObjectId.isValid(playerId) || !mongoose.Types.ObjectId.isValid(teamId)) {
-      return res.status(400).json({ message: "Invalid ObjectId format" });
+        const player = await User.findById(playerId);
+        const team = await Team.findById(teamId);
+        const sender = await User.findById(senderId);
+        const receiver = await User.findById(receiverId);
+
+        if (!player) {
+            return res.status(404).json({ message: "Player not found. Please check the player ID." });
+        }
+
+        if (!team) {
+            return res.status(404).json({ message: "Team not found. Please check the team ID." });
+        }
+
+        if (!sender) {
+            return res.status(404).json({ message: "Sender not found. Please check the sender ID." });
+        }
+
+        if (!receiver) {
+            return res.status(404).json({ message: "Receiver not found. Please check the receiver ID." });
+        }
+
+        if (team.players.includes(playerId) && senderId !== team.captainId.toString()) {
+            return res.status(400).json({ message: "Player is already part of the team." });
+        }
+
+        let notificationForReceiver = {};
+        let notificationForSender = {};
+
+        if (senderId === team.captainId.toString()) {
+            // Captain is sending an invite to the player
+            notificationForReceiver = {
+                type: "received",
+                senderId: senderId,
+                receiverId: receiverId,
+                message: `You have been invited by ${sender.name} to join team ${team.teamName}.`,
+            };
+
+            notificationForSender = {
+                type: "sent",
+                senderId: senderId,
+                receiverId: receiverId,
+                message: `Invitation sent to ${receiver.name} to join team ${team.teamName}.`,
+            };
+        } else {
+            // Player is requesting to join the team
+            notificationForReceiver = {
+                type: "received",
+                senderId: senderId,
+                receiverId: receiverId,
+                message: `${sender.name} has requested to join your team ${team.teamName}.`,
+            };
+
+            notificationForSender = {
+                type: "sent",
+                senderId: senderId,
+                receiverId: receiverId,
+                message: `Your request to join team ${team.teamName} has been sent to ${receiver.name}.`,
+            };
+        }
+
+        // Save notifications
+        receiver.notifications.push(notificationForReceiver);
+        await receiver.save();
+
+        sender.notifications.push(notificationForSender);
+        await sender.save();
+
+        return res.status(200).json({
+            message: `Request processed successfully.`,
+            teamId,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ Error: "Server error", error });
     }
-
-    const player = await User.findById(playerId);
-    const team = await Team.findById(teamId);
-
-    if (!player) {
-      return res.status(404).json({ message: "Player not found. Please check the player ID." });
-    }
-
-    if (!team) {
-      return res.status(404).json({ message: "Team not found. Please check the team ID." });
-    }
-
-    if (team.players.includes(playerId)) {
-      return res.status(400).json({ message: "Player is already part of the team." });
-    }
-
-    const captainId = team.captainId;
-    const captain = await User.findById(captainId);
-
-    const notificationForCaptain = {
-      type: "received",
-      senderId: playerId,
-      receiverId:captainId,
-      message: `${player.name} has requested to join your team ${team.teamName}.`,
-    };
-
-    const notificationForPlayer = {
-      type: "sent",
-      senderId:playerId,
-      receiverId: captainId,
-      message: `Your request to join team ${team.teamName} has been sent to the captain.`,
-    };
-
-    captain.notifications.push(notificationForCaptain);
-    await captain.save();
-
-    player.notifications.push(notificationForPlayer);
-    await player.save();
-
-    return res.status(200).json({
-      message: `Request to join team ${team.teamName} has been sent successfully.`,
-      teamId,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ Error: "Server error", error });
-  }
 };
 //===========================================================================
 
 export const getNotification = async (req, res, next) => {
-  let {userId} = req.params;
-  try{
-    const user = await User.findById(userId).populate([
-      { path: "notifications.receiverId", select: "name email" },
-      { path: "notifications.senderId", select: "name email" },
-  ])
-   console.log(user)
-      if(!user)
-          console.log("no user exist");
-      if(!user.notifications){
+    let { userId } = req.params;
+    try {
+        const user = await User.findById(userId).populate([
+            { path: "notifications.receiverId", select: "name email" },
+            { path: "notifications.senderId", select: "name email" },
+        ])
+        console.log(user)
+        if (!user)
+            console.log("no user exist");
+        if (!user.notifications) {
 
-          return res.status(200).json({message : "Not Notification Yet"})
-      }
-          // console.log("notices : "+ user.notifications)
-      return res.status(200).json({message : user.notifications})
-  }catch(error){
-      return res.status(500).json({error : "Internal Server Error",error})
-}
+            return res.status(200).json({ message: "Not Notification Yet" })
+        }
+        // console.log("notices : "+ user.notifications)
+        return res.status(200).json({ message: user.notifications })
+    } catch (error) {
+        return res.status(500).json({ error: "Internal Server Error", error })
+    }
 }
 //=============================================================================
 export const reqacceptBYCaptin = async (req, res, next) => {
-  try {
-      const { status, playerId, teamId } = req.body;
+    try {
+        const { status, playerId, teamId } = req.body;
 
-      // Find player and team
-      const player = await User.findById(playerId);
-      const team = await Team.findById(teamId);
-      console.log("id n: "+playerId +" "+player +" "+ team)
-      const captainId = team.captainId;
+        // Find player and team
+        const player = await User.findById(playerId);
+        const team = await Team.findById(teamId);
+        if (!player) {
+            console.log("Player not found");
+            return res.status(404).json({ message: "Player not found" });
+        }
 
-      if (!player) {
-          console.log("Player not found");
-          return res.status(404).json({ message: "Player not found" });
-      }
+        if (!team) {
+            console.log("Team not found");
+            return res.status(404).json({ message: "Team not found" });
+        }
 
-      if (!team) {
-          console.log("Team not found");
-          return res.status(404).json({ message: "Team not found" });
-      }
+        const captainId = team.captainId;
+        const captain = await User.findById(captainId);
+        if (!captain) {
+            console.log("Captain not found");
+            return res.status(404).json({ message: "Captain not found" });
+        }
 
-      const captain = await User.findById(captainId);
+        // Debugging logs before update
+        console.log("Player Notifications Before Update: ", player.notifications);
+        console.log("Captain Notifications Before Update: ", captain.notifications);
 
-      if (!captain) {
-          console.log("Captain not found");
-          return res.status(404).json({ message: "Captain not found" });
-      }
+        // Ensure notifications are arrays
+        player.notifications = player.notifications || [];
+        captain.notifications = captain.notifications || [];
 
-      // Add debugging logs to check notifications
-      console.log("Player Notifications Before Update: ", player.notifications);
-      console.log("Captain Notifications Before Update: ", captain.notifications);
+        // Find pending notification for player
+        const pendingNotification = player.notifications.find(
+            (notif) =>
+                (notif.senderId?.toString() === captainId.toString() &&
+                    notif.receiverId?.toString() === playerId.toString() &&
+                    notif.status === "pending") ||
+                (notif.senderId?.toString() === playerId.toString() &&
+                    notif.receiverId?.toString() === captainId.toString() &&
+                    notif.status === "pending")
+        );
 
-      // Ensure notifications are arrays
-      player.notifications = player.notifications || [];
-      captain.notifications = captain.notifications || [];
+        if (!pendingNotification) {
+            console.log("No pending notification found for player");
+            return res.status(404).json({ message: "No pending notification found" });
+        }
 
-      // Find pending notification for player
-      const pendingNotification = player.notifications.find(
-          (notif) => notif.status === "pending"
-      );
+        // Update player notification
+        pendingNotification.status = status;
+        pendingNotification.message = `Player's request to join the team is ${status}`;
 
-      if (!pendingNotification) {
-          console.log("No pending notification found for player");
-          return res.status(404).json({ message: "No pending notification found" });
-      }
+        // Find captain's notification (for captain)
+        const captainNotification = captain.notifications.find(
+            (notif) =>
+                (notif.senderId?.toString() === captainId.toString() &&
+                    notif.receiverId?.toString() === playerId.toString() &&
+                    notif.status === "pending") ||
+                (notif.senderId?.toString() === playerId.toString() &&
+                    notif.receiverId?.toString() === captainId.toString() &&
+                    notif.status === "pending")
+        );
 
-      // Update player notification
-      pendingNotification.status = status;
-      pendingNotification.message = `Player's request to join the team is ${status}`;
+        if (!captainNotification) {
+            console.log("No pending notification found for captain");
+            return res.status(404).json({ message: "No pending notification found for captain" });
+        }
 
-      // Find captain's notification (for captain)
-      const captainNotification = captain.notifications.find(
-          (notif) => notif.senderId && notif.senderId.toString() === playerId.toString() && notif.status === "pending"
-      );
+        // Update captain's notification
+        captainNotification.status = status;
+        captainNotification.message = `Player's request to join your team has been ${status}`;
 
-      if (!captainNotification) {
-          console.log("No pending notification found for captain");
-          return res.status(404).json({ message: "No pending notification found for captain" });
-      }
+        // Save player and captain
+        await player.save();
+        await captain.save();
 
-      // Update captain's notification
-      captainNotification.status = status;
-      captainNotification.message = `Player's request to join your team has been ${status}`;
+        // Debugging logs after update
+        console.log("Player Notifications After Update: ", player.notifications);
+        console.log("Captain Notifications After Update: ", captain.notifications);
 
-      // Save player and captain
-      await player.save();
-      await captain.save();
+        // Add player to team if accepted
+        if (status === "accepted") {
+            team.players.push(playerId);
+            await team.save();
+        }
 
-      // Debugging logs after update
-      console.log("Player Notifications After Update: ", player.notifications);
-      console.log("Captain Notifications After Update: ", captain.notifications);
-
-      // Add player to team if accepted
-      if (status === "accepted") {
-          team.players.push(playerId);
-          await team.save();
-      }
-
-      return res
-          .status(200)
-          .json({ message: `Player request has been ${status} `});
-  } catch (error) {
-      console.error("Error in accepting request:", error);
-      return res.status(500).json({ message: "Server error", error });
-  }
+        return res.status(200).json({ message: `Player request has been ${status}` });
+    } catch (error) {
+        console.error("Error in accepting request:", error);
+        return res.status(500).json({ message: "Server error", error });
+    }
 };
 
 //=========================Get Team By user ID========================================
 
 export const getTeamByUser = async (request, response, next) => {
     try {
-        let {id} = request.body;
-        console.log("userId : "+ id);
+        let { id } = request.body;
+        console.log("userId : " + id);
         const result = await Team.find({ $or: [{ captainId: id }, { players: id }] })
             .populate("captainId", "name")
             .populate("players");
-  
-        console.log("Result by user :"+result);
-  
+
+        console.log("Result by user :" + result);
+
         if (result) {
             return response.status(200).json({ message: result });
         }
-  
+
         return response.status(404).json({ error: "Team not found" });
     } catch (err) {
         console.error(err);
-        return response.status(500).json({ error: "internal server error" });
-      }
-  };
+        return response.status(500).json({ error: "internal server error" });
+    }
+};

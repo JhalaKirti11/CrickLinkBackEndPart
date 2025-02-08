@@ -101,7 +101,7 @@ export const tournamentById = async (req, response, next) => {
         populate: [
           { path: "team1", select: "teamName" },
           { path: "team2", select: "teamName" },
-          { path: "result.winnerId", select: "teamName" }
+          { path: "result.winnerId", select: "teamName" },
         ]
       });
     console.log("data : " + data)
@@ -119,9 +119,27 @@ export const tournamentById = async (req, response, next) => {
 
 export const deleteTournament = async (req, response, next) => {
   const id = req.params.id;
+  const {status} = req.body;
   try {
-    const del = await Tournament.deleteOne({ _id: id });
+    // find tournamen 
+    const tournament = await Tournament.findOne({_id: id});
+    console.log("Tournament data : "+ tournament);
+    // let teams = tournament.teams;
+    // console.log("teams : "+ teams);
+    if( status === "postpond"){
+      console.log("status2 : "+ tournament.status);
+      tournament.status = "inactive";
+      tournament.startDate = "00-00-0000";
+      tournament.endDate = "Not Decided";
+      console.log("New status : "+ tournament.status);
+      console.log("New tournament : "+ tournament)
+      return response.status(201).json({ message: "tournament postpond!", tournament });
+
+    }
+    else if(status==="cancel"){
+    const del = await Tournament.deleteOne({ matchId: id });
     response.status(201).json({ message: "tournament deleted!", del });
+    }
   } catch (err) {
     response.status(501).json({ err: "tournament not deleted!", err });
   }
@@ -211,5 +229,19 @@ export const addTeam = async (req, response, next) => {
     }
   } catch (err) {
     return response.status(501).json({ error: "internal server error" });
+  }
+}
+//=================Update==================
+
+
+export const updateTournament = async (req, response, next) => {
+  const id = req.params.id;
+  const {idb, startDate, endDate, status } = req.body;
+  try {
+    // find tournamen 
+    const tournament = await Tournament.findByIdAndUpdate({_id: idb},{});
+    console.log("Tournament data : "+ tournament);
+  }catch(error){
+    return response.status(401).json({error:"not updated"})
   }
 }

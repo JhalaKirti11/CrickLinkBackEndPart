@@ -80,18 +80,24 @@ export const tournamentMatch = async (request, response, next) => {
 export const updateResult = async (request, response, next) => {
     try {
         let id = request.params.matchId;
+        console.log("match-id : "+ id)
         let { team_name, score } = request.body;
+        console.log("team name : "+team_name+" "+ score)
         let team = await Team.findOne({ teamName: team_name });
         console.log("team : " + team);
         if (!team) {
             return response.status(401).json({ message: "No team Register With This Name!" });
         }
         const winnerId = team._id;
-        let result = await Match.updateOne({ _id: id }, { $set: { "result.winnerId": winnerId, "result.score": score } });
-        console.log("team : " + team.status)
+        console.log("Winner : "+ winnerId)
+        let result = await Match.updateOne({ matchId: id }, { $set: { "result.winnerId": winnerId, "result.score": score } });
+        console.log("team : " + team)
+        console.log("Result : "+ result);
         if (result) {
+            console.log("responseee")
             return response.status(200).json({ message: "Update Successfully" });
         }
+        console.log("okkkkk")
         return response.status(404).json({ error: "not found" });
     }
     catch (err) {
