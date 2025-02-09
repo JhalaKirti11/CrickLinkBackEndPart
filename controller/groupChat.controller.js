@@ -55,6 +55,7 @@ export const addToGroup = async (req, res, next) => {
         }
         // console.log("gids : " + groupId + " pid : " + playerId);
         const group = await Group.findById({ _id: groupId });
+        // console.log("group : "+ group)
         if (group) {
             group.members.push(playerId);
             await group.save();
@@ -122,7 +123,7 @@ export const sendMessages = async (req, res, next) => {
         const group = await Group.findOne({ _id: groupId });
         console.log("Group data : " + group);
 
-        if(group.members.includes(userId)){
+        if(!group.members.includes(userId)){
             return res.status(403).json({ message: "You are not a member of this group" });
         }
 
