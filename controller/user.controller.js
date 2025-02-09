@@ -130,7 +130,7 @@ export const updatePasswordWithOTP = async (request, response) => {
 
 export const updateProfile = async (req, res) => {
   const { userId } = req.params;
-  const { skills, experience, location } = req.body;
+  const { skills, experience, location, height } = req.body;
   const profilePhotoUrl = req.file ? `http://localhost:3001/uploads/${req.file.filename}` : null;
 
   try {
