@@ -76,6 +76,7 @@ app.use(cors({
 // mongoose.connect("mongodb+srv://kirtijhala1110:32RKgKweKaD1auss@cluster0.n4ygl.mongodb.net/cricklink")
 
 mongoose.connect("mongodb+srv://kirtijhala1110:32RKgKweKaD1auss@cluster0.n4ygl.mongodb.net/cricklink?retryWrites=true&w=majority&appName=Cluster0")
+// Atlas Url;
 .then(() => {
   console.log("Database connected...");
   app.use(bodyParser.json());
