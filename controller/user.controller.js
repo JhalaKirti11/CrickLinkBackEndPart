@@ -11,7 +11,6 @@ export const signUp = async (request, response, next) => {
   try {
 
     const errors = validationResult(request);
-    console.log("error : "+errors);
     if (!errors.isEmpty()) {
       console.log(errors);
       return response.status(401).json({ error: "Bad request" });
@@ -37,7 +36,6 @@ export const signIn = async (request, response, next) => {
 
   try {
     let { email, password } = request.body;
-    console.log(request.body);
     let user = await User.findOne({ email });
     if (user) {
       console.log("Passwords : "+ password +" "+ user.password)
