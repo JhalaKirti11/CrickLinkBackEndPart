@@ -59,7 +59,6 @@ export const tournamentList = async (req, res, next) => {
       });
     let currentDate = Date.now();
     currentDate = new Date(currentDate);
-    // console.log("currentDate : " + currentDate);
     tournaments.map(async (tourna) => {
       if (tourna && tourna.startDate < currentDate && tourna.status === "active") {
         console.log("status : " + tourna.status);
@@ -73,13 +72,11 @@ export const tournamentList = async (req, res, next) => {
       return res.status(404).json({ message: "No tournaments found" });
     }
 
-    // Return the tournaments with populated match details
     return res.status(200).json({
       msg: "Tournament list with schedules and match details",
       tournaments,
     });
   } catch (err) {
-    // Log the full error to the console for debugging
     console.error('Error in tournamentList:', err);
     return res.status(500).json({ message: "Internal server error", err: err.message });
   }
@@ -119,26 +116,25 @@ export const tournamentById = async (req, response, next) => {
 
 export const deleteTournament = async (req, response, next) => {
   const id = req.params.id;
-  const {status} = req.body;
+  const { status } = req.body;
   try {
     // find tournamen 
-    const tournament = await Tournament.findOne({_id: id});
-    console.log("Tournament data : "+ tournament);
-    // let teams = tournament.teams;
-    // console.log("teams : "+ teams);
-    if( status === "postpond"){
-      console.log("status2 : "+ tournament.status);
+    const tournament = await Tournament.findOne({ _id: id });
+    console.log("Tournament data : " + tournament);
+
+    if (status === "postpond") {
+      console.log("status2 : " + tournament.status);
       tournament.status = "inactive";
       tournament.startDate = "00-00-0000";
       tournament.endDate = "Not Decided";
-      console.log("New status : "+ tournament.status);
-      console.log("New tournament : "+ tournament)
+      console.log("New status : " + tournament.status);
+      console.log("New tournament : " + tournament)
       return response.status(201).json({ message: "tournament postpond!", tournament });
 
     }
-    else if(status==="cancel"){
-    const del = await Tournament.deleteOne({ matchId: id });
-    response.status(201).json({ message: "tournament deleted!", del });
+    else if (status === "cancel") {
+      const del = await Tournament.deleteOne({ matchId: id });
+      response.status(201).json({ message: "tournament deleted!", del });
     }
   } catch (err) {
     response.status(501).json({ err: "tournament not deleted!", err });
@@ -193,9 +189,7 @@ export const updateTornamentSchedule = async (req, res, next) => {
 
 export const addTeam = async (req, response, next) => {
   let tournaId = req.params.id;
-  console.log("tounaId : " + tournaId)
   let { team_name, captainEmail } = req.body;
-  console.log("team data : " + team_name + " " + captainEmail)
   try {
     const tournament = await Tournament.findOne({ _id: tournaId });
     console.log("tournament " + tournament)
@@ -203,25 +197,19 @@ export const addTeam = async (req, response, next) => {
     const captain = await User.findOne({ email: captainEmail });
     if (captain) {
       let id = captain._id;
-      console.log("captain : " + captain)
-      console.log("tournament " + tournament)
-      console.log("team : " + team_name + " " + id);
       const team = await Team.findOne({ teamName: team_name, captainId: id });
-      console.log("ygsg : " + team)
-
       if (!team) {
         return response.status(201).json({ message: "team registration required" });
       } else {
         let tId = team._id
-        console.log("team obj id : "+ tId)
         const registering = tournament.teams.some((team) => { return team.teamId.toString() === tId.toString() });
         console.log("no error : ", registering)
         if (registering) {
           return response.status(201).json({ message: "Team is already registered!" });
         }
-        tournament.teams.push({ teamId : tId });
+        tournament.teams.push({ teamId: tId });
         await tournament.save();
-        return response.status(201).json({ message: "Team Registered." ,tournament});
+        return response.status(201).json({ message: "Team Registered.", tournament });
       }
     } else {
       return response.status(201).json({ message: "User and Team Registration required." });
@@ -236,12 +224,12 @@ export const addTeam = async (req, response, next) => {
 
 export const updateTournament = async (req, response, next) => {
   const id = req.params.id;
-  const {idb, startDate, endDate, status } = req.body;
+  const { idb, startDate, endDate, status } = req.body;
   try {
     // find tournamen 
-    const tournament = await Tournament.findByIdAndUpdate({_id: idb},{});
-    console.log("Tournament data : "+ tournament);
-  }catch(error){
-    return response.status(401).json({error:"not updated"})
+    const tournament = await Tournament.findByIdAndUpdate({ _id: idb }, {});
+    console.log("Tournament data : " + tournament);
+  } catch (error) {
+    return response.status(401).json({ error: "not updated" })
   }
 }
