@@ -92,7 +92,6 @@ export const getGroupByUserId = async (req, res, next) => {
     }
 }
 
-
 //=========================================================================
 
 export const updateGroup = async (req, res) => {
