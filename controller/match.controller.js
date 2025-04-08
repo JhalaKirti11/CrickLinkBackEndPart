@@ -51,7 +51,6 @@ export const viewMatches = async (request, response, next) => {
     }
 };
 
-
 // -------------------view matches with tournament id---------------------
 
 export const tournamentMatch = async (request, response, next) => {
@@ -73,7 +72,6 @@ export const tournamentMatch = async (request, response, next) => {
         return response.status(500).json({ error: "internal server error" });
     }
 };
-
 
 // --------------------------update result------------------------------------
 
@@ -104,7 +102,6 @@ export const updateResult = async (request, response, next) => {
         return response.status(500).json({ error: "internal server error" });
     }
 }
-
 
 //------------------------------- Find Match By MatchId--------------------------
 
