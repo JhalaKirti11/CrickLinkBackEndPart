@@ -12,12 +12,6 @@ export const createTournamentReq = async (req, response, next) => {
   try {
     let { organizer_name } = req.body;
     console.log("organizer_name : " + organizer_name);
-
-    // const organizer = await User.findOne({ name : organizer_name });
-    // console.log("organizer : "+organizer);
-    // if (organizer.role == "organizer") {
-    //   // req.body.organizerId = organizer._id;
-
     const insert = await Tournament.create(req.body);
     console.log("insert : " + insert)
     return response.status(201).json({ message: " tournament created : ", insert });
@@ -90,8 +84,8 @@ export const tournamentById = async (req, response, next) => {
     const data = await Tournament.find({ $or: [{ _id: id }, { organizerId: id }] })
       .populate("organizerId", "name")
       .populate({
-        path: "teams.teamId", // Populate teamId to fetch teamName
-        select: "teamName", // Select only the teamName field
+        path: "teams.teamId",
+        select: "teamName"
       })
       .populate({
         path: "schedule.matchId", select: "matchId date venue result",
@@ -110,7 +104,6 @@ export const tournamentById = async (req, response, next) => {
     return response.status(501).json({ message: " internal server error ", err });
   }
 }
-
 
 // -----------------------------Delete Tournament--------------------------
 
@@ -140,7 +133,6 @@ export const deleteTournament = async (req, response, next) => {
     response.status(501).json({ err: "tournament not deleted!", err });
   }
 }
-
 
 // -----------------------------Update Match Schedule--------------------------
 
@@ -183,8 +175,6 @@ export const updateTornamentSchedule = async (req, res, next) => {
   }
 };
 
-
-
 // -----------------------------Add Team To Tournament--------------------------
 
 export const addTeam = async (req, response, next) => {
@@ -193,7 +183,6 @@ export const addTeam = async (req, response, next) => {
   try {
     const tournament = await Tournament.findOne({ _id: tournaId });
     console.log("tournament " + tournament)
-
     const captain = await User.findOne({ email: captainEmail });
     if (captain) {
       let id = captain._id;
@@ -213,14 +202,13 @@ export const addTeam = async (req, response, next) => {
       }
     } else {
       return response.status(201).json({ message: "User and Team Registration required." });
-
     }
   } catch (err) {
     return response.status(501).json({ error: "internal server error" });
   }
 }
-//=================Update==================
 
+//================= Update ==================
 
 export const updateTournament = async (req, response, next) => {
   const id = req.params.id;
