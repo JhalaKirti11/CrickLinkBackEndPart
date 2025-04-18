@@ -68,12 +68,10 @@ export const sendOTPController = async (request, response) => {
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log("===================", otp);
-    // Store OTP in memory (you can use Redis or DB for production)
     otpStore[email] = otp;
 
-    // Send OTP using separate mailer function
     const message = await sendOTP(email, otp);
-    console.log(message); // OTP sent successfully
+    console.log(message);
 
     return response.status(200).json({ message: "OTP sent successfully" });
   } catch (err) {
@@ -87,28 +85,21 @@ export const updatePasswordWithOTP = async (request, response) => {
   try {
     const { email, otp, newPassword } = request.body;
 
-    // Step 1: Verify OTP
     if (otpStore[email] !== otp) {
       return response.status(401).json({ error: "Invalid or expired OTP" });
     }
 
-    // Step 2: Find user
     let user = await User.findOne({ email });
     if (!user) {
       return response.status(404).json({ error: "User not found" });
     }
 
-    // Step 3: Hash new password
     let saltKey = bcrypt.genSaltSync(10);
     let encryptedNewPassword = bcrypt.hashSync(newPassword, saltKey);
 
-    // Step 4: Update password in DB
     user.password = encryptedNewPassword;
     await user.save();
-
-    // Clear OTP after successful update
     delete otpStore[email];
-
     return response.status(200).json({ message: "Password updated successfully" });
   } catch (err) {
     console.error("ram", err);
@@ -139,7 +130,6 @@ export const updateProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
     res.status(200).json({ message: "Profile updated successfully", user });
   } catch (err) {
     console.error(err);
