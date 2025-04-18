@@ -12,7 +12,6 @@ export const createTeam = async (request, response, next) => {
     try {
         const { teamName, username } = request.body;
         console.log(request.body)
-        // Find the captain by username
         const captain = await User.findOne({ name: username });
         console.log("captain : " + captain);
         if (!captain) {
@@ -101,8 +100,6 @@ export const withoutTeam = async (request, response, next) => {
 export const addtoTeamReq = async (req, res) => {
     try {
         const { playerId, teamId, senderId, receiverId } = req.body;
-
-        // Validate Object IDs
         if (!mongoose.Types.ObjectId.isValid(playerId) || !mongoose.Types.ObjectId.isValid(teamId) || !mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(receiverId)) {
             return res.status(400).json({ message: "Invalid ObjectId format" });
         }
@@ -179,6 +176,7 @@ export const addtoTeamReq = async (req, res) => {
         return res.status(500).json({ Error: "Server error", error });
     }
 };
+
 //===========================================================================
 
 export const getNotification = async (req, res, next) => {
@@ -200,12 +198,11 @@ export const getNotification = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", error })
     }
 }
+
 //=============================================================================
 export const reqacceptBYCaptin = async (req, res, next) => {
     try {
         const { status, playerId, teamId } = req.body;
-
-        // Find player and team
         const player = await User.findById(playerId);
         const team = await Team.findById(teamId);
         if (!player) {
@@ -217,7 +214,6 @@ export const reqacceptBYCaptin = async (req, res, next) => {
             console.log("Team not found");
             return res.status(404).json({ message: "Team not found" });
         }
-
         const captainId = team.captainId;
         const captain = await User.findById(captainId);
         if (!captain) {
@@ -261,10 +257,8 @@ export const reqacceptBYCaptin = async (req, res, next) => {
             console.log("No pending notification found for captain");
             return res.status(404).json({ message: "No pending notification found for captain" });
         }
-
         captainNotification.status = status;
         captainNotification.message = `Player's request to join your team has been ${status}`;
-
         await player.save();
         await captain.save();
         console.log("Player Notifications After Update: ", player.notifications);
@@ -291,13 +285,10 @@ export const getTeamByUser = async (request, response, next) => {
         const result = await Team.find({ $or: [{ captainId: id }, { players: id }] })
             .populate("captainId", "name")
             .populate("players");
-
         console.log("Result by user :" + result);
-
         if (result) {
             return response.status(200).json({ message: result });
         }
-
         return response.status(404).json({ error: "Team not found" });
     } catch (err) {
         console.error(err);
