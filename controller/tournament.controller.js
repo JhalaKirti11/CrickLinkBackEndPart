@@ -4,8 +4,6 @@ import { User } from "../model/user.model.js";
 import { Match } from "../model/match.model.js";
 import { Team } from "../model/Team.model.js";
 
-
-
 // -----------------------------Create Tournament--------------------------
 
 export const createTournamentReq = async (req, response, next) => {
@@ -21,24 +19,6 @@ export const createTournamentReq = async (req, response, next) => {
 }
 
 // -----------------------------Get Tournament List--------------------------
-
-
-// export const tournamentList = async (req, response, next) => {
-//   try {
-//     const tournaments = await Tournament.find()
-//       .populate("organizerId", "name")
-//       .populate("teams.teamId", "teamName")
-//       .populate({path: "schedule.matchId", select : "matchId team1 team2 date venue"});
-
-//     if (!tournaments || tournaments.length === 0) {
-//       return response.status(401).json({ msg: "No tournament found" });
-//     }
-//     return response.status(201).json({ msg: "Tournament list: ", tournaments });
-//   } catch (err) {
-//     return response.status(501).json({ msg: "Internal server error", err });
-//   }
-// };
-
 export const tournamentList = async (req, res, next) => {
   try {
     const tournaments = await Tournament.find()
@@ -60,12 +40,9 @@ export const tournamentList = async (req, res, next) => {
         await tourna.save();
       }
     })
-
-
     if (!tournaments || tournaments.length === 0) {
       return res.status(404).json({ message: "No tournaments found" });
     }
-
     return res.status(200).json({
       msg: "Tournament list with schedules and match details",
       tournaments,
@@ -111,7 +88,6 @@ export const deleteTournament = async (req, response, next) => {
   const id = req.params.id;
   const { status } = req.body;
   try {
-    // find tournamen 
     const tournament = await Tournament.findOne({ _id: id });
     console.log("Tournament data : " + tournament);
 
@@ -162,10 +138,8 @@ export const updateTornamentSchedule = async (req, res, next) => {
       return res.status(400).json({ message: "Match is already scheduled." });
     }
 
-    // Add the match to the tournament's schedule
     tournament.schedule.push({ matchId: mid });
 
-    // Save the updated tournament
     await tournament.save();
     console.log("what's the error : " + tournament)
     return res.status(200).json({ message: "Match scheduled successfully." });
