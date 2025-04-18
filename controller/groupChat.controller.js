@@ -1,20 +1,16 @@
 import GroupMessage,  { Group } from "../model/groupChat.model.js";
 import { User } from "../model/user.model.js";
 
-
 export const createGroup = async (req, res, next) => {
     try {
         const { userId } = req.params;
         console.log("User Id : " + userId)
         const { groupName, members, description } = req.body;
         req.body.members = userId;
-
         const checkGroup = await Group.findOne({ groupName });
-
         if (!checkGroup) {
             const group = await Group.create(req.body);
             console.log("Group data : " + group);
-
             return res.status(201).json({ message: "Group created successfully", group : group });
         } else {
             return res.status(401).json({ error: `${groupName} is not available/already exist` })
@@ -24,6 +20,7 @@ export const createGroup = async (req, res, next) => {
         return res.status(501).json({ error: "Internal server error!", error });
     }
 }
+
 //========================================================================
 
 export const viewGroup = async (req, res, next) => {
@@ -32,7 +29,6 @@ export const viewGroup = async (req, res, next) => {
         console.log("view group by groupId : " + groupId)
         const group = await Group.findById({ _id: groupId })
             .populate("members", "name")
-
         if (group) {
             return res.status(201).json({ message: group });
         } else {
@@ -45,7 +41,6 @@ export const viewGroup = async (req, res, next) => {
 }
 
 //==========================================================================================
-
 export const addToGroup = async (req, res, next) => {
     try {
         const { groupId } = req.params;
@@ -53,9 +48,7 @@ export const addToGroup = async (req, res, next) => {
         if(!playerId){
             return res.status(201).json({message:"Invalid User"})
         }
-        // console.log("gids : " + groupId + " pid : " + playerId);
         const group = await Group.findById({ _id: groupId });
-        // console.log("group : "+ group)
         if (group) {
             group.members.push(playerId);
             await group.save();
@@ -77,15 +70,10 @@ export const getGroupByUserId = async (req, res, next) => {
         const groups = await Group.findOne({ members: userId })
             .populate('members', 'name profile_picture')
             .populate('messages');
-
-        // If no groups are found
         if (!groups || groups.length === 0) {
             return res.status(404).json({ message: 'No groups found with this userId.' });
         }
-
-        // Return the groups
         return res.status(200).json({ groups });
-
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ message: 'Internal Server Error' });
@@ -97,10 +85,8 @@ export const getGroupByUserId = async (req, res, next) => {
 export const updateGroup = async (req, res) => {
     const { groupId } = req.params;
     const { groupName, description } = req.body;
-
     try {
         const group = await Group.findById({ _id: groupId });
-
         const updatedGroup = await Group.findByIdAndUpdate({ _id: groupId }, { groupName, description }, { new: true });
         if (!updatedGroup) {
             return res.status(404).json({ message: 'Group not found' });
@@ -112,36 +98,27 @@ export const updateGroup = async (req, res) => {
     }
 };
 
-//===================================== Message Send =============================================================
+//===================================== Message Send ====================================
 
 export const sendMessages = async (req, res, next) => {
     try {
         const { userId } = req.params;
         const { groupId, message } = req.body;
-
         const group = await Group.findOne({ _id: groupId });
         console.log("Group data : " + group);
-
         if(!group.members.includes(userId)){
             return res.status(403).json({ message: "You are not a member of this group" });
         }
-
         let currentDate = Date.now();
         currentDate = new Date(currentDate);
         console.log("currentDate : " + currentDate);
-
-    //  const createdMessage = group.messages.push({
         const createdMessage = await GroupMessage.create({
             senderId: userId,
-            groupId: groupId,   // receiver
+            groupId: groupId,
             message: message,
             sendDate: currentDate
         });
-
-        // captain.messages.push(createMessage);
-        // await group.save();
         return res.status(201).json({ message: 'Message sent', data: createdMessage });
-
     } catch (error) {
         console.log(err.message);
         return res.status(500).json({ error: 'Internal Server Error', error });
@@ -153,13 +130,10 @@ export const sendMessages = async (req, res, next) => {
 export const ViewAllMessages = async (req, res, next) => {
     try {
         const { groupId } = req.params;
-
         const group = await GroupMessage.find({ groupId: groupId })
         .populate("senderId", "name").sort({sendDate:1});
-
         console.log("Group Messages : " + group);
         return res.status(200).json({ data: group });
-
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({ message: 'Internal Server Error' });
